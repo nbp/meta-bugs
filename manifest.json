@@ -11,20 +11,12 @@
 
   "developer": {
     "name": "Nicolas B. Pierron",
-    "url": "https://github.com/nbp/MetaBugs"
+    "url": "https://github.com/nbp/meta-bugs"
   },
 
   "content_scripts": [
     { "matches": [
-        "*://*/",
-        "*://*/*bugzilla.mozilla.org*/",
-        "*://*/*show_bug.cgi*"
-      ],
-      "include_globs": [
-        "*bugz*",
-        "*bugs*",
-        "*Bugs*",
-        "*bz*"
+        "https://bugzilla.mozilla.org/show_bug.cgi?*"
       ],
       "js": ["meta-bugs.js"]
     }
