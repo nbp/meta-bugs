@@ -1,17 +1,17 @@
 {
   "manifest_version": 2,
-  "name": "Rooted Bugs",
+  "name": "Meta Bugs",
   "version": "0.1",
 
-  "description": "Display Bugzilla list of blocked bugs",
+  "description": "Display in Bugzilla the transitive list of blocked bugs",
 
   "icons": {
-    "48": "icons/bugs-48.png"
+    "48": "icons/meta-bug-48.png"
   },
 
   "developer": {
     "name": "Nicolas B. Pierron",
-    "url": "https://github.com/nbp/RootedBugs"
+    "url": "https://github.com/nbp/MetaBugs"
   },
 
   "applications": {
@@ -33,7 +33,7 @@
         "*Bugs*",
         "*bz*"
       ],
-      "js": ["rooted-bugs.js"]
+      "js": ["meta-bugs.js"]
     }
   ]
 }

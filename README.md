@@ -1,11 +1,8 @@
-# Rooted Bugs
+# Meta Bugs
 
-When visiting bugzilla, a bug would have a list of dependencies and a list of
-blocks bug. This addon add a new read-only section which displays the transitive
-list of blocks bug. Bugs which are blocked by the visited bug.
+When visiting bugzilla, a bug has a list of dependencies and a list of blocked
+bug. This addons add a new read-only section which displays the transitive list
+of blocked bug.
 
-This way, once given a link one can know whether to feel concerned by a bug by
-looking whether this is blocking some important work.
-
-This should help discover bugs which are sibblings without having to follow
-multiple links.
+The addon is used as a discovery mechanism for finding siblings of existing
+bugs, or to know what part of the project the current bug is contributing to.

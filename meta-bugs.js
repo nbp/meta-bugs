@@ -72,11 +72,11 @@ function bug_desc_to_link(bug_desc) {
   `;
 }
 
-function rooted_references(bugs) {
+function meta_references(bugs) {
   return `
-    <div id="field-rooted" class="field bug-list">
-      <div class="name"><a id="rooted-help-link" class="help" href="https://bugzilla.mozilla.org/">Rooted:</a></div>
-      <div class="value"><span id="field-value-rooted">
+    <div id="field-meta" class="field bug-list">
+      <div class="name"><a id="meta-help-link" class="help" href="https://bugzilla.mozilla.org/">Meta:</a></div>
+      <div class="value"><span id="field-value-meta">
         <div class="bug-list>
 	       ${bugs.map(bug_desc_to_link).join()}
         </div>
@@ -89,16 +89,16 @@ function get_current_bug_id() {
   return +document.getElementById("bug_id").value;
 }
 
-async function insert_rooted_references() {
+async function insert_meta_references() {
   let dom = document.getElementById("field-blocked");
   if (dom === undefined) {
-    document.onload = insert_rooted_references;
+    document.onload = insert_meta_references;
   }
   let id = get_current_bug_id();
   let bugs = await fetch_all_blocked_bugs([id]);
   bugs = sort_bugs(bugs);
-  let html = rooted_references(bugs);
+  let html = meta_references(bugs);
   dom.insertAdjacentHTML('afterend', html);
 }
 
-insert_rooted_references();
+insert_meta_references();
