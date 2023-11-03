@@ -49,7 +49,7 @@ function sort_bugs(bugs) {
         }
       }
     }
-  } while (!changed);
+  } while (changed);
 
   function cmp(a, b) {
     let diff = indexes[a.id] - indexes[b.id];
