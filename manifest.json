@@ -14,13 +14,6 @@
     "url": "https://github.com/nbp/MetaBugs"
   },
 
-  "applications": {
-    "gecko": {
-      "id": "jid0-KgMDcEu2B88AbzZ6ulHodW9sJzA@jetpack",
-      "strict_min_version": "57.0"
-    }
-  },
-
   "content_scripts": [
     { "matches": [
         "*://*/",
