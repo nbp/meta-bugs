@@ -1,3 +1,43 @@
+// -------------------------------------------------------------------
+// Extract information from the page.
+function get_current_bug_id() {
+  return +document.getElementById("bug_id").value;
+}
+
+function extract_product() {
+  return document.getElementById("product").value;
+}
+
+function extract_component() {
+  return document.getElementById("component").value;
+}
+
+function isSpiderMonkeyIsland() {
+  switch (extract_product()) {
+  case "Core":
+    break;
+  default:
+    return false;
+  }
+
+  switch (extract_component()) {
+  case "JavaScript Engine":
+  case "JavaScript Engine: JIT":
+  case "JavaScript: GC":
+  case "JavaScript: Internationalization API":
+  case "JavaScript: Standard Library":
+  case "JavaScript: WebAssembly":
+  case "js-ctypes":
+    break;
+  default:
+    return false;
+  }
+  return true;
+}
+
+// -------------------------------------------------------------------
+// Collect blocked bugs and display them under the Meta section.
+
 async function get_blocked_bugs_from_ids(bugs_ids) {
   let url = `https://bugzilla.mozilla.org/rest/bug?id=${bugs_ids.join()}`;
   let response = await fetch(url);
@@ -85,8 +125,12 @@ function meta_references(bugs) {
   `;
 }
 
-function get_current_bug_id() {
-  return +document.getElementById("bug_id").value;
+// -------------------------------------------------------------------
+// Mutate the page.
+
+function add_border_highlight(id) {
+  let dom = document.getElementById(id);
+  dom.style = "border: 2px dashed red;";
 }
 
 async function insert_meta_references() {
@@ -99,6 +143,46 @@ async function insert_meta_references() {
   bugs = sort_bugs(bugs);
   let html = meta_references(bugs);
   dom.insertAdjacentHTML('afterend', html);
+
+  if (isSpiderMonkeyIsland()) {
+    // Highlight the blocks section if this bug is part of the JavaScript
+    // component but does not block "Bug SpiderMonkey".
+    let is_rooted = bugs.reduce((res, b) => res || b.alias == "SpiderMonkey", false);
+    if (!is_rooted) {
+      add_border_highlight("field-blocked");
+    }
+  }
+}
+
+async function highlight_missing_triage() {
+  // Check if the priority is set, otherwise highlight it.
+  let priority = document.getElementById("priority").value;
+  if (priority === "--") {
+    // NOTE: There is a bug in bugzilla where the priority label is associated
+    // with the importance section, and the priority field only corresponds to
+    // the value of it as opposed to other fields.
+    //
+    // Thus this line would not put a border around the priority label, but only
+    // its value.
+    add_border_highlight("field-priority");
+  }
+
+  // Check if severity is properly set based on the bug type, otherwise
+  // highlight it.
+  let severity = document.getElementById("bug_severity").value;
+  let bug_type = document.getElementById("field-value-bug_type").textContent.trim();
+  switch (`${bug_type}:${severity}`) {
+  case "defect:S1":
+  case "defect:S2":
+  case "defect:S3":
+  case "defect:S4":
+  case "enhancement:N/A":
+  case "task:N/A":
+    break;
+  default:
+    add_border_highlight("field-bug_severity");
+  }
 }
 
 insert_meta_references();
+highlight_missing_triage();
