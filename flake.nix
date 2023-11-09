@@ -8,7 +8,7 @@
       meta-bugs = with { inherit (prev) stdenv; inherit (final) zip; };
         stdenv.mkDerivation {
           pname = "meta-bugs";
-          version = "0.1"; # TODO: extract from manifest file.
+          version = "0.2"; # TODO: extract from manifest file.
           src = ./.;
           buildInputs = [ zip ];
           buildPhase = ''
