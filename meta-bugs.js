@@ -107,7 +107,7 @@ function bug_desc_to_link(bug_desc) {
   let name = bug_desc.alias || `Bug ${bug_desc.id}`;
   return `
     <a class="bz_bug_link bz_status_${bug_desc.status}"
-       title="${bug_desc.summary}"
+       title="${encodeURI(bug_desc.summary)}"
        href="/show_bug.cgi?id=${bug_desc.id}">${name}</a>
   `;
 }
