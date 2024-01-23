@@ -8,7 +8,7 @@
       meta-bugs = with { inherit (prev) stdenv; inherit (final) zip; };
         stdenv.mkDerivation {
           pname = "meta-bugs";
-          version = "0.2"; # TODO: extract from manifest file.
+          version = (builtins.fromJSON (builtins.readFile ./manifest.json)).version;
           src = ./.;
           buildInputs = [ zip ];
           buildPhase = ''
