@@ -170,7 +170,7 @@ async function highlight_missing_triage() {
   // Check if severity is properly set based on the bug type, otherwise
   // highlight it.
   let severity = document.getElementById("bug_severity")
-      .getElementsByTagName("bz-option")[0].attributes["value"]
+      .getElementsByTagName("option")[0].attributes["value"]
       .value;
   let bug_type = document.getElementById("field-value-bug_type").textContent.trim();
   switch (`${bug_type}:${severity}`) {
