@@ -126,6 +126,48 @@ function meta_references(bugs) {
 }
 
 // -------------------------------------------------------------------
+// Insert links / iframe to searchfox each time a source is mentioned.
+
+// List of top-level directory names which might hint at the root of
+// mozilla-central repository. Each time a path is found, we attempt to convert
+// it to a searchfox link if we manage to find one of the following in the path.
+let top_level_cpp_directories = [
+  "accessible", "browser", "build", "caps", "chrome", "config", "devtools",
+  "docshell", "dom", "editor", "extensions", "gfx", "hal", "image", "intl",
+  "ipc", "js", "layout", "media", "memory", "mfbt", "mobile", "modules",
+  "mozglue", "netwerk", "nsprpub", "other-licenses", "parser", "python",
+  "security", "services", "startupcache", "storage", "testing", "third_party",
+  "toolkit", "tools", "uriloader", "view", "widget", "xpcom", "xpfe"
+];
+let top_level_cpp_directories_rx =
+  new RegExp("(?<=^|[/ ])(" + top_level_cpp_directories.join("|") + ")/");
+
+let gdb_stack = /(?<= at )([^:]+):([0-9]+)/gu;
+
+function add_searchfox_link(matched, path, line) {
+  let target = "https://searchfox.org/mozilla-central/source/";
+  let index = path.search(top_level_cpp_directories_rx);
+  if (index === -1) {
+    return matched;
+  }
+  return `<a href="${target}${path.slice(index)}#${line}">${matched}</a>`;
+}
+
+async function add_searchfox_in_comments() {
+  for (let comment of document.getElementsByClassName("comment-text")) {
+    for (let code of document.getElementsByTagName("code")) {
+      let content = code.innerHTML;
+      let newContent = content.replaceAll(gdb_stack, add_searchfox_link);
+      // Most of the dom would be unchanged, do not update to avoid trashing
+      // most of the work done by the browser so far.
+      if (content != newContent) {
+        code.innerHTML = newContent;
+      }
+    }
+  }
+}
+
+// -------------------------------------------------------------------
 // Mutate the page.
 
 function add_border_highlight(id) {
@@ -135,9 +177,6 @@ function add_border_highlight(id) {
 
 async function insert_meta_references() {
   let dom = document.getElementById("field-blocked");
-  if (dom === undefined) {
-    document.onload = insert_meta_references;
-  }
   let id = get_current_bug_id();
   let bugs = await fetch_all_blocked_bugs([id]);
   bugs = sort_bugs(bugs);
@@ -186,5 +225,16 @@ async function highlight_missing_triage() {
   }
 }
 
-insert_meta_references();
-highlight_missing_triage();
+async function onload_page_mutations() {
+  // If the last tag is already present, no need to hook on onload
+  let dom = document.getElementById("list_of_bugs");
+  if (dom === undefined) {
+    document.onload = once_loaded;
+    return;
+  }
+  insert_meta_references();
+  highlight_missing_triage();
+  add_searchfox_in_comments();
+}
+
+onload_page_mutations();
