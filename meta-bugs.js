@@ -142,28 +142,134 @@ let top_level_cpp_directories = [
 let top_level_cpp_directories_rx =
   new RegExp("(?<=^|[/ ])(" + top_level_cpp_directories.join("|") + ")/");
 
-let gdb_stack = /(?<= at )([^:]+):([0-9]+)/gu;
+let gdb_stack = /(?<= at )(?<path>([^: \n]|[\\][ \n])+):(?<line>[0-9]+)/gu;
+// frequently used by compilers and ASan-like reports
+let path_row_col = /(?<=[ (]|[[])(?<path>([^: \n]|[\\][ \n])+):(?<line>[0-9]+):(?<col>[0-9]+)/gu;
 
-function add_searchfox_link(matched, path, line) {
-  let target = "https://searchfox.org/mozilla-central/source/";
-  let index = path.search(top_level_cpp_directories_rx);
-  if (index === -1) {
-    return matched;
+const sf = "https://searchfox.org/mozilla-central/"; // {search,source,hgrev,rev}
+function searchfox_link(info, path) {
+  let link = sf;
+  if (info.hgrev) {
+    link = `${link}/hgrev/${info.hgrev}`;
+  } else if (info.gitrev) {
+    link = `${link}/rev/${info.gitrev}`;
+  } else {
+    link = `${link}/source`;
   }
-  return `<a href="${target}${path.slice(index)}#${line}">${matched}</a>`;
+
+  link = `${link}/${path}`;
+
+  if (info.line) {
+    link = `${link}#${info.line}`;
+  }
+
+  return link;
+}
+
+let file_to_paths_cache = {};
+async function file_to_paths(file, sf_search_url) {
+  if (file in file_to_paths) {
+    return file_to_paths[file];
+  }
+
+  // Query searchfox to find all path which might hold a file with the exact same name.
+  console.log("loading:", sf_search_url);
+  let response = await fetch(sf_search_url);
+  let test = await response.text();
+  let parser = new DOMParser();
+  let sfdoc = parser.parseFromString(text, "text/html");
+  let content = sfdoc.document.getElementById("content");
+  let iterator = document.createNodeIterator(
+    content,
+    NodeFilter.SHOW_TEXT,
+    function filter(node) {
+      return node.nodeValue === file
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_REJECT;
+    });
+
+  let paths = [];
+  let textNode = null;
+  while ((textNode = iterator.nextNode())) {
+    // The file name is wrapped by an A tag where the link target corresponds to
+    // the searchfox url suffixed by the path.
+    let href = textNode.parentNode.href;
+    let path = href.split(`${sf}/source/`)[1];
+    paths.push(path);
+  }
+
+  file_to_paths_cache[file] = paths;
+  return paths;
+}
+
+// This function is used to process all kind of file references, except that
+// they do not all have the same information.
+function add_searchfox_link(matched, info) {
+  if (info.path) {
+    let index = info.path.search(top_level_cpp_directories_rx);
+    if (index === -1) {
+      return matched; // path is not found, return the original text.
+    }
+    let a = document.createElement('a');
+    a.appendChild(document.createTextNode(matched));
+    a.setAttribute("href", searchfox_link(info, info.path.slice(index)));
+    return a;
+  }
+}
+
+function *splitAndAddLinks(text, regexps) {
+  let matches = [];
+  for (let regexp of regexps) {
+    matches.push(...text.matchAll(regexp));
+  }
+
+  // Sort by first ocurrence, and if they 2 matches have the same index, take
+  // the one with the largest context first.
+  matches.sort((a, b) =>
+    a.index > b.index || (a.index == b.index && a[0].length > b[0].length)
+  );
+
+  let idx = 0;
+  for (let info of matches) {
+    if (info.index < idx) {
+      // Can happen if we have overlapping matches.
+      continue;
+    }
+
+    // Copy the plain text.
+    if (info.index > idx) {
+      yield text.slice(idx, info.index);
+      idx = info.index;
+    }
+
+    idx += info[0].length;
+    yield add_searchfox_link(info[0], info.groups);
+  }
+
+  if (idx < text.length) {
+    yield text.slice(idx);
+  }
+}
+
+function* commentText() {
+  let textNode;
+  for (let comment of document.getElementsByClassName("comment-text")) {
+    let iterator = document.createNodeIterator(comment, NodeFilter.SHOW_TEXT);
+    while ((textNode = iterator.nextNode())) {
+      yield textNode;
+    }
+  }
 }
 
 async function add_searchfox_in_comments() {
-  for (let comment of document.getElementsByClassName("comment-text")) {
-    for (let code of document.getElementsByTagName("code")) {
-      let content = code.innerHTML;
-      let newContent = content.replaceAll(gdb_stack, add_searchfox_link);
-      // Most of the dom would be unchanged, do not update to avoid trashing
-      // most of the work done by the browser so far.
-      if (content != newContent) {
-        code.innerHTML = newContent;
-      }
-    }
+  // NOTE: Collect all the textNode before replacing them, as otherwise it might
+  // iterate over the newly inserted text elements.
+  for (let textNode of [...commentText()]) {
+    let nodes = [];
+    textNode.replaceWith(...splitAndAddLinks(textNode.nodeValue, [
+      gdb_stack,
+      path_row_col
+    ]));
   }
 }
 

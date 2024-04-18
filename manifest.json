@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Meta Bugs",
-  "version": "0.4",
+  "version": "0.4.0.3",
 
   "description": "Display in Bugzilla the transitive list of blocked bugs",
 
