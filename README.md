@@ -26,6 +26,6 @@ To test your modifications within Firefox, open `about:debugging`, and load the
 
 ## Packaging
 
-To package this repository into an addon, you can either use `nix build`,
-which will create a symbolic link named result which will contain the zip file
-to be uploaded.
+To package this repository into an addon, you can use `nix build`, which will
+create a symbolic link named result which will contain the zip file to be
+uploaded.

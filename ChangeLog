@@ -1,0 +1,13 @@
+post v0.4.0:
+	- Prevent patching text which is directly in an A tag, to avoid
+	adding links on top of existing links.
+
+	- Add support for converting file into searchfox link from crash
+	report made on treeherder. ([file:hgrev : line + 0x..])
+
+	- Add support for converting compiler file references
+	into searchfox links. (path:line:col)
+
+	- Within comments, converts file paths to searchfox links when
+	they are located in code section and follow the following format
+	"at <path>:<line>", which is typically produced by gdb.
