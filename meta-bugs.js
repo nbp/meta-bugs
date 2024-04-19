@@ -298,6 +298,9 @@ function* commentText() {
   for (let comment of document.getElementsByClassName("comment-text")) {
     let iterator = document.createNodeIterator(comment, NodeFilter.SHOW_TEXT);
     while ((textNode = iterator.nextNode())) {
+      if (textNode.parentElement.tagname == "a") {
+        continue;
+      }
       yield textNode;
     }
   }
