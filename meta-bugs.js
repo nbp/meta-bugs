@@ -1,4 +1,16 @@
 // -------------------------------------------------------------------
+// Addon & content script communication
+
+async function ext_fetch_text(url) {
+  let text = await browser.runtime.sendMessage({
+    action: "fwd_fetch",
+    url
+  });
+
+  return text;
+}
+
+// -------------------------------------------------------------------
 // Extract information from the page.
 function get_current_bug_id() {
   return +document.getElementById("bug_id").value;
@@ -142,11 +154,14 @@ let top_level_cpp_directories = [
 let top_level_cpp_directories_rx =
   new RegExp("(?<=^|[/ ])(" + top_level_cpp_directories.join("|") + ")/");
 
-let gdb_stack = /(?<= at )(?<path>([^: \n]|[\\][ \n])+):(?<line>[0-9]+)/gu;
+let gdb_stack = /(?<= at )(?<path>([^: \n\t]|[\\][ ])+):(?<line>[0-9]+)/gu;
 // frequently used by compilers and ASan-like reports
-let path_row_col = /(?<=[ (]|[[])(?<path>([^: \n]|[\\][ \n])+):(?<line>[0-9]+):(?<col>[0-9]+)/gu;
+let path_row_col = /(?<=[ (]|[[])(?<path>([^: \n\t]|[\\][ ])+):(?<line>[0-9]+):(?<col>[0-9]+)/gu;
+// Some crash reports only mention the file name :face_palm:
+let crash_stack = /(?<= )\[(?<file>([^: \n\t/]|[\\][ ])+):(?<hgrev>[0-9a-f]+) : (?<line>[0-9]+) (?<binaryOffset>[+ x0-9a-f]*)\]/gu;
 
-const sf = "https://searchfox.org/mozilla-central/"; // {search,source,hgrev,rev}
+
+const sf = "https://searchfox.org/mozilla-central"; // {search,source,hgrev,rev}
 function searchfox_link(info, path) {
   let link = sf;
   if (info.hgrev) {
@@ -174,28 +189,23 @@ async function file_to_paths(file, sf_search_url) {
 
   // Query searchfox to find all path which might hold a file with the exact same name.
   console.log("loading:", sf_search_url);
-  let response = await fetch(sf_search_url);
-  let test = await response.text();
+  let text = await ext_fetch_text(sf_search_url);
   let parser = new DOMParser();
   let sfdoc = parser.parseFromString(text, "text/html");
-  let content = sfdoc.document.getElementById("content");
-  let iterator = document.createNodeIterator(
-    content,
-    NodeFilter.SHOW_TEXT,
-    function filter(node) {
-      return node.nodeValue === file
-        ? NodeFilter.FILTER_ACCEPT
-        : NodeFilter.FILTER_REJECT;
-    });
+  let content = sfdoc.getElementById("content");
+  // The page is not filled yet, as this is handled in JavaScript, but the
+  // result of the search is embedded in a script tag.
+  let script = content.getElementsByTagName("script")[0].textContent;
+  // Extract the "result" variable and parse it as JSON.
+  let result = script.match(/(?<=results = )([^;]+)/)[0];
+  result = JSON.parse(result);
 
   let paths = [];
-  let textNode = null;
-  while ((textNode = iterator.nextNode())) {
-    // The file name is wrapped by an A tag where the link target corresponds to
-    // the searchfox url suffixed by the path.
-    let href = textNode.parentNode.href;
-    let path = href.split(`${sf}/source/`)[1];
-    paths.push(path);
+  for (let f of result.normal.Files) {
+    let path = f.path;
+    if (path.split("/").slice(-1)[0] == file) {
+      paths.push(path);
+    }
   }
 
   file_to_paths_cache[file] = paths;
@@ -213,6 +223,38 @@ function add_searchfox_link(matched, info) {
     let a = document.createElement('a');
     a.appendChild(document.createTextNode(matched));
     a.setAttribute("href", searchfox_link(info, info.path.slice(index)));
+    return a;
+  }
+  if (info.file) {
+    // Who ever got the idea of annotating anything with only a file info never
+    // had a project with multiple directory.
+    //
+    // This code would only query searchfox for a path when the link is clicked
+    // by the user. We do not proactively query searchfox to reduce trafic and
+    // avoid leaking extra information when not needed.
+    document.createTextNode(matched);
+    let a = document.createElement('a');
+    a.appendChild(document.createTextNode(matched));
+    a.setAttribute("href", '#');
+    a.onclick = async function onclick(event) {
+      event.preventDefault();
+      // Resolve file name using searchfox.
+      let search = `${sf}/search?q=&path=${info.file}&case=true&regexp=false`;
+      let paths = await file_to_paths(info.file, search);
+
+      // If multiple paths are found, leave this task for the user to decide
+      // which one to visit next.
+      if (paths.length > 1) {
+        window.open(search, "_blank");
+        return;
+      } else if (paths.length == 0) {
+        // TODO: Remove the link?
+        return;
+      }
+
+      let target = searchfox_link(info, paths[0]);
+      window.open(target, "_blank");
+    };
     return a;
   }
 }
@@ -268,7 +310,8 @@ async function add_searchfox_in_comments() {
     let nodes = [];
     textNode.replaceWith(...splitAndAddLinks(textNode.nodeValue, [
       gdb_stack,
-      path_row_col
+      path_row_col,
+      crash_stack
     ]));
   }
 }
