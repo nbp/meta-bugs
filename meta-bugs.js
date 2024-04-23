@@ -158,7 +158,7 @@ let gdb_stack = /(?<= at )(?<path>([^: \n\t]|[\\][ ])+):(?<line>[0-9]+)/gu;
 // frequently used by compilers and ASan-like reports
 let path_row_col = /(?<=[ (]|[[])(?<path>([^: \n\t]|[\\][ ])+):(?<line>[0-9]+):(?<col>[0-9]+)/gu;
 // Some crash reports only mention the file name :face_palm:
-let crash_stack = /(?<= )\[(?<file>([^: \n\t/]|[\\][ ])+):(?<hgrev>[0-9a-f]+) : (?<line>[0-9]+) (?<binaryOffset>[+ x0-9a-f]*)\]/gu;
+let crash_stack = /(?<= )\[(?<file>([^: \n\t/]|[\\][ ])+):(?<hgrev>[0-9a-f]+) : (?<line>[0-9]+)( [+] (?<binaryOffset>[x0-9a-f]*))?\]/gu;
 
 
 const sf = "https://searchfox.org/mozilla-central"; // {search,source,hgrev,rev}

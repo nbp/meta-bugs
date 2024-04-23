@@ -3,7 +3,8 @@ post v0.4.0:
 	adding links on top of existing links.
 
 	- Add support for converting file into searchfox link from crash
-	report made on treeherder. ([file:hgrev : line + 0x..])
+	report made on treeherder. ([file:hgrev : line + 0x..]) and
+	([file:hgrev : line])
 
 	- Add support for converting compiler file references
 	into searchfox links. (path:line:col)
