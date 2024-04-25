@@ -10,6 +10,15 @@ async function ext_fetch_text(url) {
   return text;
 }
 
+// This function delegates the Bugzilla API request to the background script of
+// the addon to add the API Key registered by the user to the query.
+async function bzapi_fetch(url) {
+  return browser.runtime.sendMessage({
+    action: "bzapi_fetch",
+    url
+  });
+}
+
 // -------------------------------------------------------------------
 // Extract information from the page.
 function get_current_bug_id() {
@@ -52,9 +61,7 @@ function isSpiderMonkeyIsland() {
 
 async function get_blocked_bugs_from_ids(bugs_ids) {
   let url = `https://bugzilla.mozilla.org/rest/bug?id=${bugs_ids.join()}`;
-  let response = await fetch(url);
-  let blob = await response.blob();
-  let txt = await blob.text();
+  let txt = await bzapi_fetch(url);
   return JSON.parse(txt);
 }
 

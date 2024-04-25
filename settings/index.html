@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="settings.css">
+  <link rel="icon" type="image/svg" href="/icons/meta-bugs.svg" />
+  <title>Meta-Bugs Settings</title>
+</head>
+<body>
+
+<section id="services">
+  <h2>Services</h2>
+
+  <h3>Bugzilla</h3>
+  <div class="service-settings" data-type="bugzilla">
+    <label for="bugzilla-apiKey">API Key (<a href="https://bugzilla.mozilla.org/userprefs.cgi?tab=apikey">manage API keys</a>)</label>
+    <input type="password" id="bugzilla-apiKey" data-setting="apiKey"/>
+  </div>
+
+<section class="subcategory">
+  <p>Thanks for using Meta-Bugs! <a href="https://github.com/nbp/meta-bugs/">Bug reports, enhancement requests and pull requests welcome!</a></p>
+</section>
+
+<script src="manage_settings.js"></script>
+</html>

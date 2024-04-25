@@ -1,13 +1,25 @@
-async function fwd_fetch(message, sender, sendResponse) {
-  let response = await fetch(message.url);
-  let content = await response.text();
-  return content;
-}
+let reactions = {
+  async fwd_fetch(message, sender, sendResponse) {
+    let response = await fetch(message.url);
+    let content = await response.text();
+    return content;
+  },
+
+  async bzapi_fetch(message, sender, sendResponse) {
+    let { ["bugzilla"]: settings } = await browser.storage.local.get("bugzilla");
+    settings = settings || {};
+    let url = message.url;
+    let opt = { method: "GET", headers: {} };
+    if ("apiKey" in settings) {
+      opt.headers["X-BUGZILLA-API-KEY"] = settings.apiKey;
+    }
+    let response = await fetch(url, opt);
+    let txt = await response.text();
+    return txt;
+  }
+};
 
 // Listen for messages from content scripts
 browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  switch (message.action) {
-  case "fwd_fetch":
-    return fwd_fetch(message, sender, sendResponse);
-  }
+  return await reactions[message.action](message, sender, sendResponse);
 });

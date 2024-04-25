@@ -1,4 +1,8 @@
 post v0.4.0:
+	- Use Bugzilla API Key as a way to query information from security
+	issues. The API Key can be set using the "Preferences" tab of the
+	addons in about:addons.
+
 	- Prevent patching text which is directly in an A tag, to avoid
 	adding links on top of existing links.
 

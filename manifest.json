@@ -15,6 +15,7 @@
   },
 
   "permissions": [
+    "storage",
     "https://bugzilla.mozilla.org/show_bug.cgi?*",
     "https://searchfox.org/*"
   ],
@@ -22,6 +23,10 @@
   "background": {
     "scripts": ["background.js"],
     "persistent": false
+  },
+
+  "options_ui": {
+    "page": "settings/index.html"
   },
 
   "content_scripts": [

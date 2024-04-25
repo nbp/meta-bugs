@@ -1,0 +1,31 @@
+@import url("chrome://global/skin/in-content/common-shared.css");
+
+body {
+  background: var(--in-content-box-background);
+}
+
+h3 {
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+}
+
+input[type="password"] {
+  width: 50ch;
+}
+
+label {
+  margin-top: 5px;
+}
+
+.service-settings {
+  display: grid;
+}
+
+section:not(:first-child) {
+  margin-block-start: 2em;
+}
+
+.subcategory {
+  padding-top: var(--space-xxlarge);
+  border-top: 1px solid var(--in-content-border-color);
+}
