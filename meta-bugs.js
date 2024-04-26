@@ -11,7 +11,7 @@ async function ext_fetch_text(url) {
 }
 
 // This function delegates the Bugzilla API request to the background script of
-// the addon to add the API Key registered by the user to the query.
+// the addon to add the API Key registered by the user.
 async function bzapi_fetch(url) {
   return browser.runtime.sendMessage({
     action: "bzapi_fetch",
@@ -19,6 +19,14 @@ async function bzapi_fetch(url) {
   });
 }
 
+// This function delegates the crash-stats API request to the background script of
+// the addon to add the API Token registered by the user.
+async function csapi_fetch(url) {
+  return browser.runtime.sendMessage({
+    action: "csapi_fetch",
+    url
+  });
+}
 
 // -------------------------------------------------------------------
 // Manipulate Bugzilla web-page content.
@@ -127,7 +135,7 @@ function isSpiderMonkeyIsland() {
 // -------------------------------------------------------------------
 // Collect blocked bugs and display them under the Meta section.
 
-async function get_blocked_bugs_from_ids(bugs_ids) {
+async function get_bugs_metadata_from_ids(bugs_ids) {
   let url = `https://bugzilla.mozilla.org/rest/bug?id=${bugs_ids.join()}`;
   let txt = await bzapi_fetch(url);
   return JSON.parse(txt);
@@ -138,7 +146,7 @@ async function fetch_all_blocked_bugs(bugs_ids) {
   let collected_ids = [];
   while (bugs_ids.length) {
     // Collect the bugs metadata.
-    let json = await get_blocked_bugs_from_ids(bugs_ids);
+    let json = await get_bugs_metadata_from_ids(bugs_ids);
 
     collected_ids.push(...json.bugs.map(bug => bug.id));
     collected_desc.push(...json.bugs);
@@ -377,6 +385,53 @@ async function add_searchfox_in_comments() {
 }
 
 // -------------------------------------------------------------------
+// Dig crash informations from crash-stats.
+
+// Return the signatures which are already mentioned in the bug.
+function collect_signatures() {
+  let dom = document.getElementById("field-value-cf_crash_signature");
+  let hrefPrefix = "https://crash-stats.mozilla.org/signature/?signature=";
+  let links = dom.querySelectorAll(`a[href*='${hrefPrefix}']`);
+  let sigs = [];
+  for (let sigLink of links) {
+    sigs.push(sigLink.href.substring(hrefPrefix.length));
+  }
+  return sigs;
+}
+
+async function find_similar_crashstats_bugs() {
+  // NOTE: crash signatures are already leaked by the summary provided within
+  // bugzilla. Thus making any additional crash-stats queries does not leak
+  // additional information. Thus we can perform this operation proactively
+  // without requesting the user approval.
+
+  let signatures = collect_signatures();
+  if (signatures.length === 0) {
+    return [];
+  }
+
+  // Query crash-stat https://crash-stats.mozilla.org/api/Bugs/
+  let response = await csapi_fetch(`https://crash-stats.mozilla.org/api/Bugs/?${signatures.map(s => `signatures=${s}`).join("&")}`);
+  let alternate_bugs = JSON.parse(response);
+  let bugs_ids = [...new Set(alternate_bugs.hits.map(hit => hit.id))];
+  let bugs_info = await get_bugs_metadata_from_ids(bugs_ids);
+  return bugs_info.bugs;
+}
+
+function similar_crash_references(bugs) {
+  return createBugListField("Similar Crashes", "similar_crashes", bugs);
+}
+
+async function insert_similar_crashes_references() {
+  let dom = document.getElementById("field-see_also");
+  let id = get_current_bug_id();
+  let bugs = await find_similar_crashstats_bugs();
+  bugs = sort_bugs(bugs);
+  let html = similar_crash_references(bugs);
+  dom.insertAdjacentElement('afterend', html);
+}
+
+// -------------------------------------------------------------------
 // Mutate the page.
 
 function add_border_highlight(id) {
@@ -444,6 +499,7 @@ async function onload_page_mutations() {
   insert_meta_references();
   highlight_missing_triage();
   add_searchfox_in_comments();
+  insert_similar_crashes_references();
 }
 
 onload_page_mutations();

@@ -1,4 +1,9 @@
 post v0.4.0:
+	- Add crash-stat API Token to perform queries to find similar
+	crashes when signatures are listed in a Bug description. This
+	would be useful in case a similar bug has already been fixed, or
+	in case one is already filed.
+
 	- Replace usage of insertAdjacentHTML by insertAdjacentElement, to
 	avoid bugs where some attributes are not properly serialized.
 

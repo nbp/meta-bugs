@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Meta Bugs",
-  "version": "0.4.0.7",
+  "version": "0.4.0.10",
 
   "description": "Display in Bugzilla the transitive list of blocked bugs",
 
@@ -17,7 +17,8 @@
   "permissions": [
     "storage",
     "https://bugzilla.mozilla.org/show_bug.cgi?*",
-    "https://searchfox.org/*"
+    "https://searchfox.org/*",
+    "https://crash-stats.mozilla.org/api/*"
   ],
 
   "background": {

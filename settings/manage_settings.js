@@ -3,7 +3,7 @@ const Options = {
     console.log("Initting Settings page");
 
     console.debug("Populating form");
-    let services = ["bugzilla"];
+    let services = ["bugzilla", "crash-stat"];
     await Promise.all(services.map(
       serviceType => this.initService(serviceType)
     ));
