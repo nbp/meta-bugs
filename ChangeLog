@@ -1,4 +1,7 @@
 post v0.4.0:
+	- Replace usage of insertAdjacentHTML by insertAdjacentElement, to
+	avoid bugs where some attributes are not properly serialized.
+
 	- Use Bugzilla API Key as a way to query information from security
 	issues. The API Key can be set using the "Preferences" tab of the
 	addons in about:addons.

@@ -19,6 +19,74 @@ async function bzapi_fetch(url) {
   });
 }
 
+
+// -------------------------------------------------------------------
+// Manipulate Bugzilla web-page content.
+
+function *interleave(list, sep) {
+  let insert = false;
+  if (!list.length) {
+    return;
+  }
+  yield list[0];
+  for (let i = 1; i < list.length; i++) {
+    yield sep;
+    yield list[i];
+  }
+}
+
+// `bug_desc` corresponds to an object which is the result of querying the
+// bugzilla API.
+function bug_desc_to_link(bug_desc) {
+  let name = bug_desc.alias || bug_desc.id;
+  let a = document.createElement('a');
+  a.append(document.createTextNode(name));
+  a.setAttribute("href", `/show_bug.cgi?id=${bug_desc.id}`);
+  a.setAttribute("title", bug_desc.summary);
+  a.classList.add("bz_bug_link");
+  a.classList.add(`bz_status_${bug_desc.status}`);
+  if (!bug_desc.is_open) {
+    a.classList.add("bz_closed");
+  }
+  return a;
+}
+
+function createBugListField(name, id, bugs) {
+  let domField = document.createElement('div');
+  domField.id = `field-${id}`;
+  domField.classList.add("field");
+  domField.classList.add("bug-list");
+  {
+    let domName = document.createElement('div');
+    domName.classList.add("name");
+    {
+      let a = document.createElement('a');
+      a.id = `${id}-help-link`;
+      a.classList.add("help");
+      a.href = "https://bugzilla.mozilla.org/";
+      a.append(`${name}:`);
+      domName.append(a);
+    }
+    domField.append(domName);
+  }
+  {
+    let value = document.createElement("div");
+    value.classList.add("value");
+    // NOTE: Bugzilla now presents the list of bugs with a span as a first entry
+    // displaying whether the bugs are defects, enhancements or tasks. At the
+    // moment, this information is pointless for triaging and not worth adding
+    // yet.
+    {
+      let buglist = document.createElement("div");
+      buglist.classList.add("bug-list");
+      buglist.append(...interleave(bugs.map(bug_desc_to_link), ", "));
+      value.append(buglist);
+    }
+    domField.append(value);
+  }
+  return domField;
+}
+
 // -------------------------------------------------------------------
 // Extract information from the page.
 function get_current_bug_id() {
@@ -122,26 +190,8 @@ function sort_bugs(bugs) {
   return bugs;
 }
 
-function bug_desc_to_link(bug_desc) {
-  let name = bug_desc.alias || `Bug ${bug_desc.id}`;
-  return `
-    <a class="bz_bug_link bz_status_${bug_desc.status}"
-       title="${encodeURI(bug_desc.summary)}"
-       href="/show_bug.cgi?id=${bug_desc.id}">${name}</a>
-  `;
-}
-
 function meta_references(bugs) {
-  return `
-    <div id="field-meta" class="field bug-list">
-      <div class="name"><a id="meta-help-link" class="help" href="https://bugzilla.mozilla.org/">Meta:</a></div>
-      <div class="value"><span id="field-value-meta">
-        <div class="bug-list>
-	       ${bugs.map(bug_desc_to_link).join()}
-        </div>
-      </span></div>
-    </div>
-  `;
+  return createBugListField("Meta", "meta", bugs);
 }
 
 // -------------------------------------------------------------------
@@ -340,7 +390,7 @@ async function insert_meta_references() {
   let bugs = await fetch_all_blocked_bugs([id]);
   bugs = sort_bugs(bugs);
   let html = meta_references(bugs);
-  dom.insertAdjacentHTML('afterend', html);
+  dom.insertAdjacentElement('afterend', html);
 
   if (isSpiderMonkeyIsland()) {
     // Highlight the blocks section if this bug is part of the JavaScript
