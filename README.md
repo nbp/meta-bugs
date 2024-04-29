@@ -2,15 +2,17 @@
 
 ![alt text](https://github.com/nbp/meta-bugs/blob/master/images/example-01.png?raw=true)
 
-When visiting bugzilla, a bug has a list of dependencies and a list of blocked
-bug. This addons add a new read-only section which displays the transitive list
-of blocked bug.
+This addon improves [bugzilla](https://bugzilla.mozilla.org) user experience with
+additional information to help with the triage and resolution efforts.
 
-The addon is used as a discovery mechanism for finding siblings of existing
-bugs, or to know what part of the project the current bug is contributing to.
-
-Additionally it will highlight areas which have to be updated while triaging the
-bugs, by adding an extra red border around fields which have to be updated.
+When installed and enabled, this addon will:
+ - Building a transitive list of bugs blocked.
+ - Highlight in red fields which have to be set when triaging.
+   * Priorities should be set.
+   * Severity should be set to N/A for non-defects, and to some value for defects.
+   * Block list of bug should transitively block [Bug SpiderMonkey](https://bugzilla.mozilla.org/show_bug.cgi?id=spidermonkey).
+ - Replace file names of source files by links to [searchfox](https://searchfox.mozilla.org) when possible.
+ - Query [crash-stats](https://crash-stats.mozilla.org/) to display bugs with similar signatures.
 
 This addon is available at https://addons.mozilla.org/firefox/addon/meta-bugs/
 
@@ -27,5 +29,5 @@ To test your modifications within Firefox, open `about:debugging`, and load the
 ## Packaging
 
 To package this repository into an addon, you can use `nix build`, which will
-create a symbolic link named result which will contain the zip file to be
+create a symbolic link named `result` which will contain the zip file to be
 uploaded.
